@@ -1,23 +1,20 @@
-import jwt
-from jwt import ExpiredSignatureError, InvalidTokenError
+from jwt import encode, decode, ExpiredSignatureError, InvalidTokenError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from passlib.hash import pbkdf2_sha256
-from decouple import config
+
 from app.stockage import load_data, MOCK_USERS, save_data
 from datetime import timezone, datetime, timedelta
 from app.models.users import Token
 from typing import Annotated
 from app.models.users import UserData
+from app.core.config import get_config
 
 
 OAuth2_token = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 fake_db = load_data()
-
-SECRET_KEY = config("SECRET_KEY")
-ALGORITHM = config('ALGORITHM')
-ACCESS_TOKEN_EXPIRE_MINUTES = int(config("ACCESS_TOKEN_EXPIRE_MINUTES"))
+config = get_config()
 
 
 def hash_password(plaint_password):
@@ -103,7 +100,7 @@ def authentication(username, password):
     raise AUTH_ERROR
 
 
-def create_access_token(data, expire=ACCESS_TOKEN_EXPIRE_MINUTES):
+def create_access_token(data, expire=config.access_token_expire_minutes):
     """ Create a JWT access token with the given data and expiration time
 
     Parameters
@@ -132,7 +129,8 @@ def create_access_token(data, expire=ACCESS_TOKEN_EXPIRE_MINUTES):
     try:
         exp = datetime.now(timezone.utc) + timedelta(minutes=expire)
         to_encode['exp'] = exp
-        access_token = jwt.encode(to_encode, SECRET_KEY, ALGORITHM)
+        access_token = encode(
+            to_encode, config.secret_key, algorithm=config.algorithm)
 
         return Token(access_token=access_token, token_type="bearer")
 
@@ -165,7 +163,8 @@ async def current_user(token: Annotated[str, Depends(OAuth2_token)]):
 
     try:
 
-        playload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        playload = decode(token, config.secret_key,
+                          algorithms=[config.algorithm])
         username = playload.get('sub')
 
         if username is None:
@@ -209,7 +208,7 @@ async def current_active_user(current: Annotated[UserData, Depends(current_user)
     # TODO: Implement a more robust user activity check, such as using a database field to track user activity status and handling potential exceptions during the check
     INACTIVE_USER = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="User is not Active"
+        detail="inactive user"
     )
     if not current.is_active:
         raise INACTIVE_USER

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from app.models.users import UserData
-from app.utils.auth_utils import current_active_user
+from app.auth.utils import current_active_user
 from typing import Annotated
 
 

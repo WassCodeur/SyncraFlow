@@ -1,20 +1,26 @@
 from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
-from typing import Annotated
-from app.models.users import UserData
-from app.routers.auths import router as auth_router
-from app.routers.user import router as users_router
-from app.utils.auth_utils import authentication, current_active_user
+from app.auth.routes import router as auth_router
+from app.auth.user import router as users_router
+from app.core.config import get_config
+from app.database.connection import db_connection
+
+config = get_config()
 
 
-app = FastAPI()
+app = FastAPI(
+    openapi_url=None if config.envirement == "production" else "/openapi.json",
+    docs_url=None if config.envirement == "production" else "/docs",
+    redoc_url=None if config.envirement == "production" else "/redoc",
+
+)
 
 
 app.include_router(auth_router)
 app.include_router(users_router)
 
 
-@app.get("/", dependencies=[Depends(current_active_user)])
+@app.get("/", dependencies=[])
 async def welcome():
     return JSONResponse(
         content={
@@ -31,6 +37,7 @@ async def welcome():
     )
 
 
+print(conn)
+
 if __name__ == "__main__":
-    print(authentication("andrewbean", "Pass1234"))
     pass

@@ -4,7 +4,7 @@ from app.models.users import UserLogin, Token, UserRegistered
 from typing import Annotated
 from uuid import uuid4
 from datetime import datetime, timezone
-from app.utils.auth_utils import create_access_token, authentication, hash_password, register_user, get_user
+from app.auth.utils import create_access_token, authentication, hash_password, register_user, get_user
 
 router = APIRouter(prefix="/auth", tags=['Authentification'])
 
