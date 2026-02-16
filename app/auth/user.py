@@ -4,7 +4,7 @@ from app.auth.utils import current_active_user
 from typing import Annotated
 
 
-router = APIRouter(prefix='/me', tags=['Users'])
+router = APIRouter(prefix='/user', tags=['Users'])
 
 
 @router.get("/me")

@@ -1,6 +1,9 @@
+import logging
 from decouple import config
 from app.models.config import Config
-import logging
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from psycopg_pool import ConnectionPool
 
 
 def get_config():

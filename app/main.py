@@ -1,11 +1,21 @@
+from contextlib import asynccontextmanager
+from psycopg.sql import SQL, Identifier
+from psycopg.types.json import Jsonb
 from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
+from psycopg_pool import ConnectionPool
 from app.auth.routes import router as auth_router
 from app.auth.user import router as users_router
 from app.core.config import get_config
-from app.database.connection import db_connection
+from app.database import queries, connection
+
 
 config = get_config()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    pass
 
 
 app = FastAPI(
@@ -37,7 +47,17 @@ async def welcome():
     )
 
 
-print(conn)
+# thing = {"number": 42}
+
+# queries.insert('test', thing)
+# print(queries.get_all('test', ['id', 'phone']))
+
+# queries.update('test', filter=thing, new_data={'name': 'Wasscodeur'})
+
+# queries.delete('test', thing)
+
+# queries.get_one('test', ['id', 'number', 'name'], filter=thing)
+
 
 if __name__ == "__main__":
     pass
