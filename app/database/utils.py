@@ -2,8 +2,6 @@ import json
 from psycopg.sql import SQL, Identifier
 from app.core.config import setup_logging
 
-# TODO:  handle exceptions properly, also add logging for better debugging and monitoring.
-
 
 logger = setup_logging()
 
@@ -94,14 +92,14 @@ def generate_sql_query(table, q_type='SELECT', columns=None, comparison_type='eq
         sets_sql = SQL(', ').join(sets)
 
         query = SQL(
-            "UPDATE {} SET {} WHERE {}"
+            "UPDATE {} SET {} WHERE {} RETURNING *"
         ).format(
             Identifier(table),
             sets_sql,
             conditions_sql
         )
     elif q_type == "DELETE":
-        query = SQL("DELETE FROM {} WHERE {}").format(
+        query = SQL("DELETE FROM {} WHERE {} RETURNING id").format(
             Identifier(table),
             conditions_sql
         )

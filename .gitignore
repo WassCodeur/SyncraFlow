@@ -11,3 +11,17 @@ __pycache__
 *.swp
 .DS_Store
 app/database/mock_users.json
+app/database/mock_products.json
+app/database/mock_orders.json
+app/database/mock_reviews.json
+app/database/mock_categories.json
+app/database/mock_inventory.json
+app/database/mock_suppliers.json
+app/database/mock_shipments.json
+app/database/mock_payments.json
+app/database/mock_coupons.json
+app/database/mock_wishlists.json
+alembic/versions/*.py
+tests/__pycache__
+tests/test_*.py
+tests/__init__.py

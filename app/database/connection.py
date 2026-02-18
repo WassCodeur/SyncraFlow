@@ -1,17 +1,20 @@
+from fastapi import Request
 from app.core.config import get_config, setup_logging
 from psycopg_pool import ConnectionPool
 from contextlib import contextmanager
 from app.core.exceptions import DatabaseError
+from typing import cast
+
 
 config = get_config()
 logger = setup_logging()
 
 
-pool = ConnectionPool(config.db_url)
+def get_connection_pool():
+    return ConnectionPool(config.db_url)
 
 
-@contextmanager
-def get_conn():
+def get_conn(request: Request):
     """Context manager to get a database connection from the pool. It ensures that the connection is properly released back to the pool after use, even if an error occurs
     during the database operations.
 
@@ -20,12 +23,13 @@ def get_conn():
     connection
         A database connection from the pool that can be used to execute queries. The connection is automatically released back to the pool when the context block is exited.
     """
+    pool = cast(ConnectionPool, request.app.state.conn_pool)
+
     try:
         with pool.connection() as conn:
             logger.info("Database connection acquired from the pool")
             yield conn
             logger.info("Database connection released back to the pool")
     except Exception as e:
-        logger.error(e)
-        raise DatabaseError(
-            "An error occurred while connecting to the database") from e
+        # logger.error(e)
+        raise

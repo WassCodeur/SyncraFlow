@@ -1,19 +1,19 @@
-from app.database.connection import get_conn
 from psycopg.sql import SQL, Identifier
-from psycopg.types.json import Json, Jsonb
-from psycopg.rows import dict_row, namedtuple_row
+from psycopg.types.json import Jsonb
+from psycopg.rows import dict_row
+from psycopg.errors import UndefinedColumn
+from psycopg import Connection
+from typing import List
 from app.core.config import setup_logging
 from app.database.utils import auto_pars_json, generate_sql_query
-from typing import List
-from app.core.exceptions import AlreadyExistsError, NotFoundError
+from fastapi import HTTPException, status\
 
 
-# TODO:  handle exceptions properly, also add logging for better debugging and monitoring.
 
 logger = setup_logging()
 
 
-def insert(table, data):
+def insert(db_conn: Connection, table, data):
     """Insert data in the database table.
 
     Parameters
@@ -28,35 +28,47 @@ def insert(table, data):
     bool
         True if the insertion was successful, False otherwise.
     """
+
+    data_exist = get_one(db_conn, table, filter=data)
+    if data_exist:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This Resource already exists"
+        )
+
     try:
-
-        data_exist = get_one(table, filter=data)
-        if data_exist:
-            raise AlreadyExistsError("Resource already exists")
-
         columns = data.keys()
         values = [Jsonb(v) if isinstance(v, dict)
                   else v for v in data.values()]
 
         placeholders_list = [SQL('%s') for _ in columns]
         placeholders = SQL(', ').join(placeholders_list)
-        query = SQL("INSERT INTO {} ({}) VALUES ({})").format(
+        query = SQL("INSERT INTO {} ({}) VALUES ({}) RETURNING *").format(
             Identifier(table),
             SQL(', ').join(map(Identifier, columns)),
             placeholders
         )
+        with db_conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(query, values)
 
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute(query, values)
-            conn.commit()
-        return True
+            db_conn.commit()
+            new_added = cur.fetchone()
+
+            return new_added
+
+    except UndefinedColumn as e:
+        logger.error("SQL Error: ", exc_info=True)
+        db_conn.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Error: Unknown or invalid column.")
     except Exception as e:
-        logger.error(e)
-        raise
+        logger.error("SQL Error: ", exc_info=True)
+        db_conn.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="An error occurred while processing the request.")
 
 
-def get_all(table, columns: List = None):
+def get_all(db_conn: Connection, table, columns: List = None):
     """Retrieve all in a table with the specified columns, if no column is specified, all columns will be retrieved.
 
     Parameters
@@ -81,26 +93,32 @@ def get_all(table, columns: List = None):
             query = SQL("SELECT * FROM {}").format(
                 Identifier(table)
             )
-        with get_conn() as conn:
 
-            with conn.cursor(row_factory=dict_row) as cur:
+            with db_conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(query)
                 rows = cur.fetchall()
                 if not rows:
-                    return False
+                    return []
 
                 data = [
                     {k: auto_pars_json(v) for k, v in row.items()} for row in rows
                 ]
 
                 return data
+    except UndefinedColumn as e:
+        logger.error("SQL error:", exc_info=True)
+        db_conn.rollback()
+        raise HTTPException(
+            status_code=400, detail="Error: Unknown or invalid column.")
 
     except Exception as e:
-        logger.error(e)
-        raise
+        logger.error("SQL Error: ", exc_info=True)
+        db_conn.rollback()
+        raise HTTPException(
+            status_code=400, detail="An error occurred while processing the request.")
 
 
-def get_one(table, columns: List = None, filter: dict = None):
+def get_one(db_conn: Connection, table, columns: List = None, filter: dict = None):
     """retrieve one item in the table.
 
     Parameters
@@ -121,26 +139,33 @@ def get_one(table, columns: List = None, filter: dict = None):
         table, columns=columns, comparison_elems=filter)
 
     try:
-        with get_conn() as conn:
-            with conn.cursor(row_factory=dict_row) as cur:
-                cur.execute(query, values)
-                row = cur.fetchone()
 
-                if not row:
-                    return False
+        with db_conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(query, values)
+            row = cur.fetchone()
 
-                data = {
-                    k: auto_pars_json(v) for k, v in row.items()
-                }
+            if not row:
+                return {}
 
-                return data
+            data = {
+                k: auto_pars_json(v) for k, v in row.items()
+            }
+
+            return data
+    except UndefinedColumn:
+        logger.error("SQL error:", exc_info=True)
+        db_conn.rollback()
+        raise HTTPException(
+            status_code=400, detail="Error: Unknown or invalid column.")
 
     except Exception as e:
-        logger.error(e)
-        raise NotFoundError("Resource not found") from e
+        logger.error("SQL error:", exc_info=True)
+        db_conn.rollback()
+        raise HTTPException(
+            status_code=400, detail="An error occurred while processing the request.")
 
 
-def update(table,  filter: dict = None, new_data: dict = None):
+def update(db_conn: Connection, table,  filter: dict = None, new_data: dict = None):
     """Update a particular item in the table.
 
     Parameters
@@ -157,23 +182,38 @@ def update(table,  filter: dict = None, new_data: dict = None):
     bool
         True if the update was successful, False otherwise.
     """
+    data_exist = get_one(db_conn, table=table, filter=filter)
+    if not data_exist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The ressource your trying to update doesn't exist"
+        )
+
     try:
         query, values = generate_sql_query(
             table, q_type='UPDATE', comparison_elems=filter, new_data=new_data)
-        data_exist = get_one(table=table, filter=filter)
-        if not data_exist:
-            raise NotFoundError("Resource not found")
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute(query, values)
-                conn.commit()
-                return True
+
+        with db_conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(query, values)
+            db_conn.commit()
+            updated_data = cur.fectchone()
+
+            return updated_data
+
+    except UndefinedColumn:
+        logger.error("SQL error:", exc_info=True)
+        db_conn.rollback()
+        raise HTTPException(
+            status_code=400, detail="Error: Unknown or invalid column.")
+
     except Exception as e:
-        logger.error(e)
-        raise e
+        logger.error("SQL error:", exc_info=True)
+        db_conn.rollback()
+        raise HTTPException(
+            status_code=400, detail="An error occurred while processing the request.")
 
 
-def delete(table, filter: dict = None):
+def delete(db_conn: Connection, table, filter: dict = None):
     """Delete a particular item in the table.
 
      Parameters
@@ -188,20 +228,31 @@ def delete(table, filter: dict = None):
     bool
         True if the deletion was successful, False otherwise.
     """
+    data_exist = get_one(db_conn, table, filter=filter)
+
+    if not data_exist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The ressource your trying to delete doesn't exist"
+        )
+
     try:
         query, values = generate_sql_query(
             table, q_type='DELETE', comparison_elems=filter)
 
-        data_exist = get_one(table, filter=filter)
+        with db_conn.cursor() as cur:
+            cur.execute(query, values)
+            deleted_data_id = cur.fetchone()[0]
+            return deleted_data_id
 
-        if not data_exist:
-            raise NotFoundError("Resource not found")
-
-        with get_conn() as conn:
-            with conn.cursor() as cur:
-                print(cur.execute(query, values))
-                return True
+    except UndefinedColumn:
+        logger.error("SQL error:", exc_info=True)
+        db_conn.rollback()
+        raise HTTPException(
+            status_code=400, detail="Error: Unknown or invalid column.")
 
     except Exception as e:
-        logger.error(e)
-        raise e
+        logger.error("SQL error:", exc_info=True)
+        db_conn.rollback()
+        raise HTTPException(
+            status_code=400, detail="An error occurred while processing the request.")
