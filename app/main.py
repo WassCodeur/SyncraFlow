@@ -47,17 +47,25 @@ async def welcome():
     )
 
 
-# thing = {"number": 42}
+thing = {
+    "number": 4,
+    "name": "Test"
+}
+filter = {
+    "number": 4
+}
 
-# queries.insert('test', thing)
+try:
+    queries.insert('test', thing)
+except Exception as e:
+    print(e)
+
 # print(queries.get_all('test', ['id', 'phone']))
 
-# queries.update('test', filter=thing, new_data={'name': 'Wasscodeur'})
+queries.update('test', filter=thing, new_data={'name': 'Wasscodeur'})
 
-# queries.delete('test', thing)
+# print(queries.delete('test', filter=filter))
 
-# queries.get_one('test', ['id', 'number', 'name'], filter=thing)
-
-
+print(queries.get_one('test', ['id', 'number', 'name'], filter=filter))
 if __name__ == "__main__":
     pass

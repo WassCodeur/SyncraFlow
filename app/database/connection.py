@@ -1,9 +1,7 @@
 from app.core.config import get_config, setup_logging
 from psycopg_pool import ConnectionPool
 from contextlib import contextmanager
-
-
-# TODO:  handle exceptions properly, also add logging for better debugging and monitoring.
+from app.core.exceptions import DatabaseError
 
 config = get_config()
 logger = setup_logging()
@@ -14,9 +12,20 @@ pool = ConnectionPool(config.db_url)
 
 @contextmanager
 def get_conn():
+    """Context manager to get a database connection from the pool. It ensures that the connection is properly released back to the pool after use, even if an error occurs
+    during the database operations.
+
+    Yields
+    ------
+    connection
+        A database connection from the pool that can be used to execute queries. The connection is automatically released back to the pool when the context block is exited.
+    """
     try:
         with pool.connection() as conn:
+            logger.info("Database connection acquired from the pool")
             yield conn
+            logger.info("Database connection released back to the pool")
     except Exception as e:
         logger.error(e)
-        raise
+        raise DatabaseError(
+            "An error occurred while connecting to the database") from e

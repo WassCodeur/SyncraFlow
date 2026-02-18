@@ -18,48 +18,52 @@ config = get_config()
 
 
 def hash_password(plaint_password):
-    """ Hash a plain password using pbkdf2_sha256 algorithm
+    """ Hash a plain password using pbkdf2_sha256 algorithm.
 
     Parameters
     ----------
     plaint_password : str
-        The plain password to hash
+        The plain password to hash.
+
     Returns
     -------
     str
-        The hashed password
+        The hashed password.
     """
     return pbkdf2_sha256.hash(plaint_password)
 
 
 def verify_password(plaint_password, password_hash):
-    """ Verify a plain password against a hashed password
+    """ Verify a plain password against a hashed password.
 
     Parameters
     ----------
     plaint_password : str
-        The plain password to verify
+        The plain password to verify.
     password_hash : str
-        The hashed password to compare against
+        The hashed password to compare against.
+
     Returns
     -------
         bool
-        True if the password is correct, False otherwise
+        True if the password is correct, False otherwise.
     """
 
     return pbkdf2_sha256.verify(plaint_password, password_hash)
 
 
 def get_user(username):
-    """ Get a user by username
+    """ Retrieve a user from the fake database by username.
+
     Parameters
     ----------
     username : str
-        The username of the user to retrieve
+        The username of the user to retrieve.
+
     Returns
     -------
     dict or None
-        The user data if found, None otherwise
+        The user data if found, None otherwise.
     """
     # TODO: Implement a more efficient way to retrieve user data, such as using a database or an in-memory data structure
     for user in fake_db:
@@ -70,22 +74,24 @@ def get_user(username):
 
 
 def authentication(username, password):
-    """ Authenticate a user by username and password
+    """Authenticate a user by username and password.
 
     Parameters
     ----------
     username : str
-        The username of the user to authenticate
+        The username of the user to authenticate.
     password : str
-        The plain password of the user to authenticate
+        The plain password of the user to authenticate.
+
     Returns
     -------
     dict
-        The user data if authentication is successful
+        The user data if authentication is successful, None otherwise.
+
     Raises
     ------
     HTTPException
-        If authentication fails due to incorrect username or password
+        If authentication fails due to incorrect username or password.
     """
     # TODO: Implement a more secure authentication mechanism, such as using a database with hashed passwords and salting
     AUTH_ERROR = HTTPException(
@@ -101,23 +107,24 @@ def authentication(username, password):
 
 
 def create_access_token(data, expire=config.access_token_expire_minutes):
-    """ Create a JWT access token with the given data and expiration time
+    """Create a JWT access token with the given data and expiration time.
 
     Parameters
     ----------
     data : dict
-        The data to include in the token payload
+        The data to include in the token payload.
     expire : int, optional
-        The expiration time of the token in minutes (default is ACCESS_TOKEN_EXPIRE_MINUTES)
+        The expiration time of the token in minutes (default is ACCESS_TOKEN_EXPIRE_MINUTES).
 
     Returns
     -------
     Token
-        An instance of the Token model containing the access token and token type
+        An instance of the Token model containing the access token and token type.
+
     Raises
     ------
     HTTPException
-        If token creation fails due to any reason
+        If token creation fails due to any reason.
     """
     # TODO: Implement a more robust token creation mechanism, such as using a secure key management system and handling potential exceptions during token encoding
     to_encode = data.copy()
