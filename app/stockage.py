@@ -12,6 +12,10 @@ DATA_DIR = Path("app/database/")
 
 MOCK_USERS = DATA_DIR / "mock_users.json"
 
+WORFLOWS_DATA = DATA_DIR / "mock_workflows.json"
+
+STEPS_DATA = DATA_DIR / "mock_steps.json"
+
 # TODO: Implement a real database and remove this mock data generation and stockage functions
 
 
@@ -46,7 +50,3 @@ def load_data(file=MOCK_USERS):
             return load(f)
     else:
         return []
-
-
-if __name__ == "__main__":
-    generate_fake_users(3)

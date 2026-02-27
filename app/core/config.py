@@ -15,7 +15,7 @@ def get_config():
         Application configuration object containing secret key, algorithm and access token expiration time
     """
     return Config(
-        envirement=config("ENVIREMENT"),
+        envirement=config("ENV"),
         secret_key=config("SECRET_KEY"),
         algorithm=config("ALGORITHM"),
         access_token_expire_minutes=config(
@@ -25,7 +25,8 @@ def get_config():
         db_user=config("DB_USER"),
         db_password=config("DB_PASSWORD"),
         db_host=config("DB_HOST"),
-        db_port=config("DB_PORT", cast=int)
+        db_port=config("DB_PORT", cast=int),
+        REDIS_DB=config("REDIS_DB")
     )
 
 
@@ -46,6 +47,10 @@ def setup_logging():
     logger.setLevel(logging.DEBUG)
 
     return logger
+
+
+settings = get_config()
+logger = setup_logging()
 
 
 if __name__ == "__main__":

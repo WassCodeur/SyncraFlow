@@ -12,6 +12,7 @@ class Config(BaseModel):
     db_password: str = "password"
     db_host: str = "localhost"
     db_port: int = 5432
+    REDIS_DB: str = "redis://localhost:6379/0"
 
     class Config:
         env_file = ".env"

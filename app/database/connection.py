@@ -1,17 +1,14 @@
 from fastapi import Request
-from app.core.config import get_config, setup_logging
+from app.core.config import settings, logger
 from psycopg_pool import ConnectionPool
 from contextlib import contextmanager
 from app.core.exceptions import DatabaseError
 from typing import cast
-
-
-config = get_config()
-logger = setup_logging()
+from redis import Redis
 
 
 def get_connection_pool():
-    return ConnectionPool(config.db_url)
+    return ConnectionPool(settings.db_url)
 
 
 def get_conn(request: Request):
@@ -33,3 +30,7 @@ def get_conn(request: Request):
     except Exception as e:
         # logger.error(e)
         raise
+
+
+def get_redis_client():
+    return Redis(host="localhost", decode_responses=False)

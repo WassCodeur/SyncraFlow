@@ -8,13 +8,12 @@ from datetime import timezone, datetime, timedelta
 from app.models.users import Token
 from typing import Annotated
 from app.models.users import UserData
-from app.core.config import get_config
+from app.core.config import settings
 
 
 OAuth2_token = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
-fake_db = load_data()
-config = get_config()
+fake_db = load_data(MOCK_USERS)
 
 
 def hash_password(plaint_password):
@@ -106,7 +105,7 @@ def authentication(username, password):
     raise AUTH_ERROR
 
 
-def create_access_token(data, expire=config.access_token_expire_minutes):
+def create_access_token(data, expire=settings.access_token_expire_minutes):
     """Create a JWT access token with the given data and expiration time.
 
     Parameters
@@ -137,7 +136,7 @@ def create_access_token(data, expire=config.access_token_expire_minutes):
         exp = datetime.now(timezone.utc) + timedelta(minutes=expire)
         to_encode['exp'] = exp
         access_token = encode(
-            to_encode, config.secret_key, algorithm=config.algorithm)
+            to_encode, settings.secret_key, algorithm=settings.algorithm)
 
         return Token(access_token=access_token, token_type="bearer")
 
@@ -170,8 +169,8 @@ async def current_user(token: Annotated[str, Depends(OAuth2_token)]):
 
     try:
 
-        playload = decode(token, config.secret_key,
-                          algorithms=[config.algorithm])
+        playload = decode(token, settings.secret_key,
+                          algorithms=[settings.algorithm])
         username = playload.get('sub')
 
         if username is None:

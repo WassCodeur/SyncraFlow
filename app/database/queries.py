@@ -4,13 +4,9 @@ from psycopg.rows import dict_row
 from psycopg.errors import UndefinedColumn
 from psycopg import Connection
 from typing import List
-from app.core.config import setup_logging
+from app.core.config import logger
 from app.database.utils import auto_pars_json, generate_sql_query
-from fastapi import HTTPException, status\
-
-
-
-logger = setup_logging()
+from fastapi import HTTPException, status
 
 
 def insert(db_conn: Connection, table, data):

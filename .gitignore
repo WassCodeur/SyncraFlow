@@ -20,7 +20,7 @@ app/database/mock_suppliers.json
 app/database/mock_shipments.json
 app/database/mock_payments.json
 app/database/mock_coupons.json
-app/database/mock_wishlists.json
+app/database/mock*.json
 alembic/versions/*.py
 tests/__pycache__
 tests/test_*.py

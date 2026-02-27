@@ -1,9 +1,6 @@
 import json
 from psycopg.sql import SQL, Identifier
-from app.core.config import setup_logging
-
-
-logger = setup_logging()
+from app.core.config import logger
 
 
 def auto_pars_json(value):

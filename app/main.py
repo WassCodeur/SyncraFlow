@@ -6,19 +6,19 @@ from fastapi.responses import JSONResponse
 from psycopg_pool import ConnectionPool
 from app.auth.routes import router as auth_router
 from app.auth.user import router as users_router
-from app.core.config import get_config, setup_logging
+from app.core.config import settings, logger
 from app.database import queries
 from app.database.connection import get_conn, get_connection_pool
 from typing import Annotated
 from psycopg import connection
-
-
-config = get_config()
+from app.works.tasks import initial_task
+from celery.result import AsyncResult
+from app.api.routes import router as api_routes
+from app.api.workflows import router as workflows_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger = setup_logging()
     logger.info("Starting Up")
     pool = get_connection_pool()
 
@@ -33,37 +33,21 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    openapi_url=None if config.envirement == "production" else "/openapi.json",
-    docs_url=None if config.envirement == "production" else "/docs",
-    redoc_url=None if config.envirement == "production" else "/redoc",
+    title="Syncraflow",
+    openapi_url=None if settings.envirement == "production" else "/openapi.json",
+    docs_url=None if settings.envirement == "production" else "/docs",
+    redoc_url=None if settings.envirement == "production" else "/redoc",
     lifespan=lifespan
+
 
 )
 
 
-app.include_router(auth_router)
-app.include_router(users_router)
-
-
 @app.get("/")
 async def welcome(db: Annotated[connection, Depends(get_conn)]):
+    data = queries.get_all(db, 'test', ['id', 'phone'])
 
-    thing = {
-        "number": 12,
-        "name": "hello"
-    }
-    filter = {
-        "number": 4
-    }
-    # print(queries.insert(db, 'test', thing))
-
-    print(queries.get_all(db, 'test', ['id', 'phone']))
-
-    # queries.update('test', filter=thing, new_data={'name': 'Wasscodeur'})
-    # print(queries.get_one(db, 'test', [
-    #      'id', 'number', 'name'], filter=filter))
-
-    # print(queries.delete('test', filter=filter))
+    initial_task.delay(data)
 
     return JSONResponse(
         content={
@@ -79,6 +63,23 @@ async def welcome(db: Annotated[connection, Depends(get_conn)]):
         }
     )
 
+
+app.include_router(users_router)
+app.include_router(api_routes)
+app.include_router(auth_router)
+app.include_router(workflows_router)
+
+
+@app.post("/tasts/status/{task_id}")
+async def task_status(task_id: str):
+    task_result = AsyncResult(task_id)
+
+    if task_result.ready():
+        return {'message': f'task {task_id} is done'}
+    elif task_result.failed():
+        return {'message': f'task {task_id} is failed'}
+    else:
+        return {'message': f'task {task_id} is in progress'}
 
 if __name__ == "__main__":
     pass
