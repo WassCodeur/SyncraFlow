@@ -2,7 +2,6 @@ from fastapi import APIRouter, status, HTTPException
 from app.models.workflows import WorkFlow, Step, WorkflowCreated, WorkFlowModel, StepModel
 from app.api.utils import generat_slug
 from uuid import uuid4
-from pathlib import Path
 from app.stockage import save_data, load_data, STEPS_DATA, WORFLOWS_DATA
 
 

@@ -1,4 +1,6 @@
+from app.stockage import STEPS_DATA, WORFLOWS_DATA, load_data
 from app.works.celery_app import celery_app
+
 import time
 
 
@@ -12,5 +14,6 @@ def initial_task(data):
 
 
 @celery_app.task
-def run_workfow(workflow_id, steps):
-    pass
+def run_workfow(workflow_id, steps,  playload):
+    workflows = load_data(WORFLOWS_DATA)
+    steps = load_data(STEPS_DATA)

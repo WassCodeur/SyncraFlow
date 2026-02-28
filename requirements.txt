@@ -9,3 +9,5 @@ httpx==0.28.1
 python-multipart==0.0.20
 psycopg[pool]==3.3.2
 nanoid==2.0.0
+sqlalchemy==2.0.47
+alembic==1.7.7
