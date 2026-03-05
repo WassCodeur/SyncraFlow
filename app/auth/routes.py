@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from app.models.users import UserLogin, Token, UserRegistered
+from app.models.users import UserLogin, Token, UserRegistered, UserData
 from typing import Annotated
+from psycopg import connection
+from app.database.connection import get_conn
 from uuid import uuid4
 from datetime import datetime, timezone
 from app.auth.utils import create_access_token, authentication, hash_password, register_user, get_user
@@ -10,7 +12,7 @@ router = APIRouter(prefix="/auth", tags=['Authentification'])
 
 
 @router.post("/token", response_model=Token)
-async def loggin(data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+async def loggin(db_conn: Annotated[connection, Depends(get_conn)], data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     """Login user and return access token
 
     Parameters
@@ -27,15 +29,15 @@ async def loggin(data: Annotated[OAuth2PasswordRequestForm, Depends()]):
         username=data.username,
         password=data.password
     )
-    if authentication(user_login.username, user_login.password):
+    if authentication(db_conn, user_login.username, user_login.password):
         playload = {"sub": user_login.username}
         token = create_access_token(playload)
 
         return token
 
 
-@router.post("/register")
-def registration(data: UserRegistered):
+@router.post("/register", response_model=UserData)
+def registration(db: Annotated[connection, Depends(get_conn)], data: UserRegistered):
     """Register a new user
 
     Parameters
@@ -49,7 +51,8 @@ def registration(data: UserRegistered):
         User registration status
     """
     try:
-        user = get_user(data.username)
+        user = get_user(db, data.username)
+        print(user)
         if user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -60,13 +63,13 @@ def registration(data: UserRegistered):
             "name": data.name,
             "username": data.username,
             "email": data.email,
-            "hash_passord": hash_password(data.password),
+            "hash_password": hash_password(data.password),
             "is_active": False,
             "role": "USER",
             "tier": data.tier,
             "created_at": str(datetime.now(timezone.utc))
         }
-        register_user(user)
+        register_user(db, user)
     except Exception as e:
         raise e
 

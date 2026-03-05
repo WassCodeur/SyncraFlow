@@ -14,6 +14,7 @@ class UserLogin(User):
 
 
 class UserData(User):
+    id: UUID
     name: str
     email: EmailStr
     tier: str

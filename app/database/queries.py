@@ -55,11 +55,13 @@ def insert(db_conn: Connection, table, data):
     except UndefinedColumn as e:
         logger.error("SQL Error: ", exc_info=True)
         db_conn.rollback()
+        print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="Error: Unknown or invalid column.")
     except Exception as e:
         logger.error("SQL Error: ", exc_info=True)
         db_conn.rollback()
+
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="An error occurred while processing the request.")
 
@@ -148,17 +150,70 @@ def get_one(db_conn: Connection, table, columns: List = None, filter: dict = Non
             }
 
             return data
-    except UndefinedColumn:
+    except UndefinedColumn as e:
         logger.error("SQL error:", exc_info=True)
         db_conn.rollback()
+        print(e)
         raise HTTPException(
             status_code=400, detail="Error: Unknown or invalid column.")
 
     except Exception as e:
         logger.error("SQL error:", exc_info=True)
         db_conn.rollback()
+        print(e)
         raise HTTPException(
             status_code=400, detail="An error occurred while processing the request.")
+
+
+def get_all_by_filter(db_conn: Connection, table, columns: List = None, filter: dict = None):
+    """retrieve all item in the table by filter.
+
+    Parameters
+    ----------
+    table : str
+        The name of the table to query.
+    columns : List, optional
+        A list of column names to retrieve, by default None (retrieves all columns).
+    filter : dict, optional
+        A dictionary of column-value pairs to filter the rows to retrieve, by default None (retrieves all rows).
+
+    Returns
+    -------
+    dict
+        A dictionary representing the retrieved row, or an empty dictionary if no matching row is found.
+    """
+    query, values = generate_sql_query(
+        table, columns=columns, comparison_elems=filter)
+
+    try:
+
+        with db_conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(query, values)
+            rows = cur.fetchall()
+
+            data = []
+
+            if not rows:
+                return {}
+
+            for row in rows:
+                data.append({
+                    k: auto_pars_json(v) for k, v in row.items()})
+
+            return data
+    except UndefinedColumn as e:
+        logger.error("SQL error:", exc_info=True)
+        db_conn.rollback()
+        print(e)
+        raise HTTPException(
+            status_code=400, detail="Error: Unknown or invalid column.")
+
+    except Exception as e:
+        logger.error("SQL error:", exc_info=True)
+        db_conn.rollback()
+        print(e)
+        raise HTTPException(
+            status_code=400, detail="An error occurred while processing the request or no matching data found.")
 
 
 def update(db_conn: Connection, table,  filter: dict = None, new_data: dict = None):

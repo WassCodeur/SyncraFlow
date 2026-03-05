@@ -10,18 +10,17 @@ class WorkFlowModel(BaseModel):
 class WorkFlow(WorkFlowModel):
     id: str
     user_id: str
-    slug: str
+    trigger_slug: str
     is_active: bool
 
 
 class Step(BaseModel):
     type: str
     config: Dict[str, Any]
-    # order: int
 
 
 class StepModel(Step):
-    id: str
+    step_id: str
     workflow_id: str
     order: int
 
@@ -32,4 +31,4 @@ class Steps(BaseModel):
 
 class WorkflowCreated(BaseModel):
     workflow_id: str
-    slug: str
+    trigger_slug: str

@@ -2,13 +2,15 @@ from jwt import encode, decode, ExpiredSignatureError, InvalidTokenError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from passlib.hash import pbkdf2_sha256
-
 from app.stockage import load_data, MOCK_USERS, save_data
 from datetime import timezone, datetime, timedelta
 from app.models.users import Token
 from typing import Annotated
+from app.database.connection import get_conn
+from psycopg import connection
 from app.models.users import UserData
 from app.core.config import settings
+from app.database import queries, connection
 
 
 OAuth2_token = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -51,7 +53,7 @@ def verify_password(plaint_password, password_hash):
     return pbkdf2_sha256.verify(plaint_password, password_hash)
 
 
-def get_user(username):
+def get_user(db_conn, username):
     """ Retrieve a user from the fake database by username.
 
     Parameters
@@ -64,15 +66,15 @@ def get_user(username):
     dict or None
         The user data if found, None otherwise.
     """
-    # TODO: Implement a more efficient way to retrieve user data, such as using a database or an in-memory data structure
-    for user in fake_db:
-        if user['username'] == username:
-            return user
+    user = queries.get_one(db_conn, table="users",
+                           filter={"username": username})
+    if user:
+        return user
 
     return None
 
 
-def authentication(username, password):
+def authentication(db, username, password):
     """Authenticate a user by username and password.
 
     Parameters
@@ -97,9 +99,9 @@ def authentication(username, password):
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Password or username incorrect"
     )
-    user = get_user(username)
+    user = get_user(db, username)
     if user:
-        if verify_password(password, user['password_hash']):
+        if verify_password(password, user['hash_password']):
             return user
 
     raise AUTH_ERROR
@@ -144,7 +146,7 @@ def create_access_token(data, expire=settings.access_token_expire_minutes):
         raise TOKEN_CREATION_ERROR
 
 
-async def current_user(token: Annotated[str, Depends(OAuth2_token)]):
+async def current_user(db_conn: Annotated[connection, Depends(get_conn)], token: Annotated[str, Depends(OAuth2_token)]):
     """ Get the current user based on the provided JWT token
 
     Parameters
@@ -176,7 +178,7 @@ async def current_user(token: Annotated[str, Depends(OAuth2_token)]):
         if username is None:
             raise CREDENTIAL_ERROR
 
-        user = get_user(username)
+        user = get_user(db_conn, username)
 
         if user is None:
             raise CREDENTIAL_ERROR
@@ -222,7 +224,7 @@ async def current_active_user(current: Annotated[UserData, Depends(current_user)
     return current
 
 
-def register_user(data):
+def register_user(db, data):
     """ Register a new user
 
     Parameters
@@ -230,5 +232,6 @@ def register_user(data):
     data : dict
         The user data to register
     """
+    queries.insert(db, 'users', data)
     fake_db.append(data)
     save_data(fake_db)

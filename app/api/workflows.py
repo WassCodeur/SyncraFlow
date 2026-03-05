@@ -1,60 +1,76 @@
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, status, HTTPException, Depends
+from psycopg import connection
+from app.database.connection import get_conn
 from app.models.workflows import WorkFlow, Step, WorkflowCreated, WorkFlowModel, StepModel
 from app.api.utils import generat_slug
 from uuid import uuid4
-from app.stockage import save_data, load_data, STEPS_DATA, WORFLOWS_DATA
+from app.database import queries
+from app.models.users import UserData
+from app.auth.utils import current_active_user
+from typing import Annotated
+from psycopg.types.json import Jsonb
+
+from app.stockage import STEPS_DATA, WORFLOWS_DATA, load_data, save_data
 
 
 router = APIRouter(prefix="/api/v1", tags=['Workflows'])
 
 
 @router.post('/workflows', response_model=WorkflowCreated)
-def add_workflow(workflow: WorkFlowModel):
-    workflows = load_data(WORFLOWS_DATA)
+def add_workflow(db: Annotated[connection, Depends(get_conn)], user: Annotated[UserData, Depends(current_active_user)], workflow: WorkFlowModel):
+    table = "workflows"
     data = {
         'id': str(uuid4()),
         'name': workflow.name,
-        'user_id': "qtqrRTZQgPO3",  # TODO: to be update
-        'slug': generat_slug(workflow.name),
-        'is_active': True
+        'user_id': str(user.id),
+        'trigger_slug': generat_slug(workflow.name),
     }
-    print(workflows)
-    for workflow in workflows:
-        if workflow['name'] == data['name'] and workflow['user_id'] == data['user_id']:
+    workflow_exist = queries.get_one(db_conn=db, table=table, columns=[
+                                     "id", "trigger_slug"], filter={'name': data['name'], 'user_id': data['user_id']})
+    if workflow_exist:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"You alreary have this workflow with the same name slug: {workflow_exist['trigger_slug']}"
+        )
+
+    workflow = queries.insert(db, table, data)
+
+    return {"workflow_id": str(workflow['id']), "trigger_slug": workflow['trigger_slug']}
+
+
+@router.post("/workflows/{workflow_id}/steps", response_model=StepModel)
+def add_step(db: Annotated[connection, Depends(get_conn)], user: Annotated[UserData, Depends(current_active_user)], step: Step, workflow_id):
+
+    workflow_exist = queries.get_one(db_conn=db, table="workflows", columns=[
+                                     "id", "trigger_slug"], filter={'id': workflow_id, 'user_id': user.id})
+
+    if workflow_exist:
+        step_exist = queries.get_one(
+            db_conn=db, table="steps", filter={"type": step.type, 'workflow_id': workflow_id})
+        if step_exist:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"You alreary have this workflow with the same name slug: {workflow['slug']}"
+                detail=f"You already have this step with the same type: {step_exist['type']}"
             )
 
-    workflow = WorkFlow(**data)
-    workflows.append(data)
-    save_data(workflows, WORFLOWS_DATA)
+        steps = queries.get_all_by_filter(db_conn=db, table='steps', filter={
+                                          'workflow_id': workflow_id})
+        next_order = len(steps) + 1
 
-    return {"workflow_id": workflow.id, "slug": workflow.slug}
+        step = {
+            "id": str(uuid4()),
+            "workflow_id": workflow_id,
+            "type": step.type,
+            "config": step.config,
+            "order":  next_order
 
+        }
 
-@router.post("/workflows/{workflow_id}/steps")
-def add_step(step: Step, workflow_id):
-    workflows = load_data(WORFLOWS_DATA)
-    steps = load_data(STEPS_DATA)
-    print(steps)
-    for workflow in workflows:
-        if workflow['id'] == workflow_id:
-            step = {
-                "id": str(uuid4()),
-                "workflow_id": workflow_id,
-                "type": step.type,
-                "config": step.config,
-                "order": len(steps) + 1
+        queries.insert(db, 'steps', step)
 
-            }
-            steps.append(step)
-            save_data(steps, STEPS_DATA)
-            step = StepModel(**step)
-
-            return {"step_id": step.id, "workflow_id": step.workflow_id, "step_type": step.type, "order": step.order}
+        return {"step_id": step['id'], "workflow_id": step['workflow_id'], "type": step['type'], "order": step['order'], 'config': step['config']}
 
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Failed to add the new step"
+        detail="Failed to add the new step, workflow not found or you don't have access to it"
     )

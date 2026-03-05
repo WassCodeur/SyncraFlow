@@ -1,5 +1,6 @@
 import json
 from psycopg.sql import SQL, Identifier
+from psycopg.types.json import Jsonb
 from app.core.config import logger
 
 
@@ -62,6 +63,9 @@ def generate_sql_query(table, q_type='SELECT', columns=None, comparison_type='eq
         if comparison_type == 'eq':
             conditions.append(SQL("{} = %s").format(Identifier(col)))
 
+        if isinstance(val, dict):
+            val = Jsonb(val)
+
         values.append(val)
 
     if not conditions:
@@ -80,7 +84,10 @@ def generate_sql_query(table, q_type='SELECT', columns=None, comparison_type='eq
         vals = []
         for col, val in new_data.items():
             sets.append(SQL("{} = %s").format(Identifier(col)))
-            vals.append(val)
+        if isinstance(val, dict):
+            val = Jsonb(val)
+
+        vals.append(val)
 
         values = vals + values
         if not sets:

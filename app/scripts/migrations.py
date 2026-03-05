@@ -2,8 +2,9 @@ import datetime
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, JSON, DateTime, Text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from app.core.config import settings
-from uuid import UUID
+import uuid
 from datetime import datetime, timezone
 
 
@@ -14,22 +15,23 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = 'users'
-    id = Column(UUID, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
     username = Column(String(120), unique=True, nullable=False)
     email = Column(String(120), unique=True, nullable=False)
-    hash_passord = Column(String(255), nullable=False)
+    hash_password = Column(String(255), nullable=False)
     tier = Column(String(50), nullable=False, default="free")
     role = Column(String(50), default="USER", nullable=False)
     name = Column(String(100))
-    created_at = Column(DateTime, default=datetime.now(timezone.UTC))
+    is_active = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     workflows = relationship("Workflow", back_populates="user")
     credentials = relationship("Credential", back_populates="user")
 
 
 class Workflow(Base):
     __tablename__ = 'workflows'
-    id = Column(UUID, primary_key=True)
-    user_id = Column(UUID, ForeignKey('users.id'))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
     name = Column(String(100), nullable=False)
     is_active = Column(Boolean, default=False)
     trigger_slug = Column(String(50), unique=True)
@@ -42,8 +44,8 @@ class Workflow(Base):
 
 class Credential(Base):
     __tablename__ = 'credentials'
-    id = Column(UUID, primary_key=True)
-    user_id = Column(UUID, ForeignKey('users.id'))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
     name = Column(String(100))
     service = Column(String(50))
     data = Column(JSON)
@@ -52,21 +54,23 @@ class Credential(Base):
 
 class Step(Base):
     __tablename__ = 'steps'
-    id = Column(UUID, primary_key=True)
-    workflow_id = Column(UUID, ForeignKey('workflows.id'))
-    step_type = Column(String(50))
-    config = Column(JSON)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
+    # user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
+    workflow_id = Column(UUID(as_uuid=True), ForeignKey('workflows.id'))
+    type = Column(String(50))
+    config = Column(JSONB)
     order = Column(Integer)
     workflow = relationship("Workflow", back_populates="steps")
+    # user = relationship("User", back_populates="steps")
 
 
 class Execution(Base):
     __tablename__ = 'executions'
-    id = Column(UUID, primary_key=True)
-    workflow_id = Column(UUID, ForeignKey('workflows.id'))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
+    workflow_id = Column(UUID(as_uuid=True), ForeignKey('workflows.id'))
     status = Column(String(20))
     payload_received = Column(JSON)
-    executed_at = Column(DateTime, default=datetime.now(timezone.UTC))
+    executed_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 def init_db():
