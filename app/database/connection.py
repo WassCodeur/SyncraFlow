@@ -1,7 +1,6 @@
 from fastapi import Request
 from app.core.config import settings, logger
 from psycopg_pool import ConnectionPool
-from contextlib import contextmanager
 from app.core.exceptions import DatabaseError
 from typing import cast
 from redis import Redis

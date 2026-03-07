@@ -18,6 +18,22 @@ router = APIRouter(prefix="/api/v1", tags=['Workflows'])
 
 @router.post('/workflows', response_model=WorkflowCreated)
 def add_workflow(db: Annotated[connection, Depends(get_conn)], user: Annotated[UserData, Depends(current_active_user)], workflow: WorkFlowModel):
+    """Create a new workflow for the authenticated user.
+
+    Parameters
+    ----------
+    db : connection
+        The database connection.
+    user : UserData
+        The currently authenticated user.
+    workflow : WorkFlowModel
+        The workflow data to be created, including the name and any relevant configuration.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the ID of the newly created workflow and its trigger slug.
+    """
     table = "workflows"
     data = {
         'id': str(uuid4()),
@@ -40,6 +56,24 @@ def add_workflow(db: Annotated[connection, Depends(get_conn)], user: Annotated[U
 
 @router.post("/workflows/{workflow_id}/steps", response_model=StepModel)
 def add_step(db: Annotated[connection, Depends(get_conn)], user: Annotated[UserData, Depends(current_active_user)], step: Step, workflow_id):
+    """Add a new step to an existing workflow.
+    
+    Parameters
+    ----------
+    db : connection
+        The database connection.
+    user : UserData
+        The currently authenticated user.
+    step : Step
+        The step data to be added, including type and configuration.
+    workflow_id : str
+        The ID of the workflow to which the step will be added.
+    
+    Returns
+    -------
+    dict
+        A dictionary containing the details of the newly added step, such as step ID, workflow ID, type, order, and configuration.
+    """
 
     workflow_exist = queries.get_one(db_conn=db, table="workflows", columns=[
                                      "id", "trigger_slug"], filter={'id': workflow_id, 'user_id': user.id})
@@ -61,7 +95,7 @@ def add_step(db: Annotated[connection, Depends(get_conn)], user: Annotated[UserD
             "id": str(uuid4()),
             "workflow_id": workflow_id,
             "type": step.type,
-            "config": step.config,
+            "config": step.config.model_dump(),
             "order":  next_order
 
         }

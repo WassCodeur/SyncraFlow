@@ -165,7 +165,7 @@ def get_one(db_conn: Connection, table, columns: List = None, filter: dict = Non
             status_code=400, detail="An error occurred while processing the request.")
 
 
-def get_all_by_filter(db_conn: Connection, table, columns: List = None, filter: dict = None):
+def get_all_by_filter(db_conn: Connection, table, columns: List = None, filter: dict = None, order_by: str = None):
     """retrieve all item in the table by filter.
 
     Parameters
@@ -176,6 +176,8 @@ def get_all_by_filter(db_conn: Connection, table, columns: List = None, filter: 
         A list of column names to retrieve, by default None (retrieves all columns).
     filter : dict, optional
         A dictionary of column-value pairs to filter the rows to retrieve, by default None (retrieves all rows).
+    order_by : str, optional
+        The column name to order the results by, by default None (no ordering).
 
     Returns
     -------
@@ -183,7 +185,7 @@ def get_all_by_filter(db_conn: Connection, table, columns: List = None, filter: 
         A dictionary representing the retrieved row, or an empty dictionary if no matching row is found.
     """
     query, values = generate_sql_query(
-        table, columns=columns, comparison_elems=filter)
+        table, columns=columns, comparison_elems=filter, order_by=order_by)
 
     try:
 

@@ -11,7 +11,7 @@ from app.database import queries
 from app.database.connection import get_conn, get_connection_pool
 from typing import Annotated
 from psycopg import connection
-from app.works.tasks import initial_task
+from app.workers.tasks import initial_task
 from celery.result import AsyncResult
 from app.api.routes import router as api_routes
 from app.api.workflows import router as workflows_router
@@ -72,6 +72,18 @@ app.include_router(workflows_router)
 
 @app.post("/tasts/status/{task_id}")
 async def task_status(task_id: str):
+    """Endpoint to check the status of a Celery task.
+
+    Parameters
+    ----------
+    task_id : str
+        The ID of the Celery task to check.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the status message of the task.
+    """
     task_result = AsyncResult(task_id)
 
     if task_result.ready():

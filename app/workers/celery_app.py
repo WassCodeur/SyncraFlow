@@ -5,5 +5,5 @@ celery_app = Celery(
     "SyncraFlow",
     broker=settings.REDIS_DB,
     backend=settings.REDIS_DB,
-    include=["app.works.tasks"]
+    include=["app.workers.tasks"]
 )

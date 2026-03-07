@@ -26,7 +26,7 @@ def auto_pars_json(value):
         return value
 
 
-def generate_sql_query(table, q_type='SELECT', columns=None, comparison_type='eq', comparison_elems: dict = None, new_data: dict = None):
+def generate_sql_query(table, q_type='SELECT', columns=None, comparison_type='eq', comparison_elems: dict = None, new_data: dict = None, order_by: str = None):
     """To generate SQL query accoring to the given type and parameters, it supports SELECT, UPDATE and DELETE queries.
 
     Parameters
@@ -44,6 +44,8 @@ def generate_sql_query(table, q_type='SELECT', columns=None, comparison_type='eq
     new_data : dict, optional
         A dictionary of column-value pairs to use in the SET clause for UPDATE queries. The keys are the column names and the values are the new values to set. The default is None (no
     new data for UPDATE queries).
+    order_by : str, optional
+        The column name to order the results by, by default None (no ordering).
 
     Returns
     -------
@@ -54,6 +56,11 @@ def generate_sql_query(table, q_type='SELECT', columns=None, comparison_type='eq
         sql_columns = SQL(', ').join(map(Identifier, columns))
     else:
         sql_columns = SQL('*')
+
+    if order_by:
+        order_by_sql = SQL(" ORDER BY {}").format(Identifier(order_by))
+    else:
+        order_by_sql = SQL('')
 
     conditions = []
     values = []
@@ -77,7 +84,8 @@ def generate_sql_query(table, q_type='SELECT', columns=None, comparison_type='eq
         query = SQL("SELECT {} FROM {} WHERE {}").format(
             sql_columns,
             Identifier(table),
-            conditions_sql
+            conditions_sql,
+            order_by_sql
         )
     elif q_type == "UPDATE" and new_data:
         sets = []
