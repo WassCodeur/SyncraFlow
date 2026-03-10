@@ -39,9 +39,10 @@ def run_workflow(workflow_id, steps,  payload):
         f"Running workflow {workflow_id} with steps {steps} and payload {payload}")
 
     for step in steps:
-        logger.info(f"Executing step: {step['type']}")
-        result = run_step(step["type"], step["config"])
-        logger.info(f"Result of step {step['type']}: {result}")
+        # logger.info(f"Executing step: {step['type']}")
+        # result = run_step(step["type"], step["config"])
+        run_step(step["type"], step["config"])
+        # logger.info(f"Result of step {step['type']}: {result}")
         time.sleep(15)  # Simulate time taken to execute the step
 
     return {"message": "ok"}

@@ -29,8 +29,9 @@ class FilterConfig(BaseModel):
 
 
 class HttpRequestConfig(BaseModel):
-    type: Literal["http_request"]
-    method: Literal["GET", "POST", "PUT", "DELETE"]
+    type: Literal["http_request"] = "http_request"
+    method: Literal["GET", "POST", "PUT", "DELETE",
+                    "PATCH", "OPTIONS", "CONNECT", "HEAD"]
     url: str
     headers: Dict[str, str] = {}
     body: Optional[Union[Dict[str, Any], str]] = None
