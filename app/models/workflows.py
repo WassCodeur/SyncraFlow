@@ -15,17 +15,19 @@ class WorkFlow(WorkFlowModel):
 
 
 class EmailConfig(BaseModel):
-    type: Literal['email']
+    type: Literal['email'] = 'email'
     to: str
     subject: str
     body: str
+    action_url: Optional[str] = None
+    action_text: Optional[str] = None
 
 
 class FilterConfig(BaseModel):
     type: Literal["filter"]
     field_to_check: str  # ex: "amount"
-    operator: Literal[">", "<", "==", "!="]
-    value_to_compare: Union[int, float, str]
+    operator: Literal[">", "<", "==", "!="] = None
+    value_to_compare: Union[int, float, str] = None
 
 
 class HttpRequestConfig(BaseModel):
@@ -74,3 +76,31 @@ class Steps(BaseModel):
 class WorkflowCreated(BaseModel):
     workflow_id: str
     trigger_slug: str
+
+
+if __name__ == "__main__":
+    email_config = EmailConfig(
+        to="user@example.com",
+        subject="Test Email",
+        body="This is a test email."
+    )
+
+    filter_config = FilterConfig(
+        type="filter",
+        field_to_check="amount",
+        operator=">",
+        value_to_compare=100
+    )
+
+    http_request_config = HttpRequestConfig(
+        type="http_request",
+        method="GET",
+        url="http://127.0.0.1:8080/user/me",
+        headers={"Content-Type": "application/json",
+                 "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ3YXNzNTYiLCJleHAiOjE3NzMyNzU1MzV9._x-MPcVbRWBha2UpbsSAjCuvDxOSPzCAr9ecEbADJzM"},
+        body={"key": "value"}
+    )
+    email_config.model_dump()
+    filter_config.model_dump()
+
+    print(http_request_config.model_dump())

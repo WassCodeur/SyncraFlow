@@ -4,7 +4,7 @@ import requests
 from json import dumps
 
 
-def make_http_request(config: HttpRequestConfig):
+def make_http_request(config: HttpRequestConfig, payload=None):
     """Make an HTTP request based on the provided configuration.
 
     Parameters

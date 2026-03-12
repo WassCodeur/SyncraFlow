@@ -26,7 +26,11 @@ def get_config():
         db_password=config("DB_PASSWORD"),
         db_host=config("DB_HOST"),
         db_port=config("DB_PORT", cast=int),
-        REDIS_DB=config("REDIS_DB")
+        REDIS_DB=config("REDIS_DB"),
+        smtp_server=config("SMTP_SERVER", default=""),
+        smtp_port=config("SMTP_PORT", default=""),
+        smtp_password=config("SMTP_PASSWORD"),
+        smtp_username=config("SMTP_USERNAME", "user@example.com")
     )
 
 

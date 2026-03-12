@@ -2,10 +2,10 @@ from app.nodes.email import send_email
 from app.nodes.logic_filter import filter_data
 from app.nodes.whatsapp import send_whatsapp_message
 from app.nodes.formatter import format_field
-from app.models.workflows import HttpRequestConfig
+from app.models.workflows import HttpRequestConfig, EmailConfig
 
 
-def run_step(step_type, config):
+def run_step(step_type, config, payload=None):
     """Run a workflow step based on its type and configuration.
 
     Parameters:
@@ -23,8 +23,8 @@ def run_step(step_type, config):
     """
     if step_type == "email":
         from app.nodes.email import send_email
-        pass
-        # send_email(config=config)
+        config = EmailConfig(**config)
+        send_email(config=config, payload=payload)
     elif step_type == "filter":
         from app.nodes.logic_filter import filter_data
         pass
@@ -32,16 +32,16 @@ def run_step(step_type, config):
     elif step_type == "http_request":
         from app.nodes.http_request import make_http_request
         config = HttpRequestConfig(**config)
-        res = make_http_request(config=config)
+        res = make_http_request(config=config, payload=payload)
         print(f"HTTP request step result: {res}")
         return res
     elif step_type == "whatsapp_message":
         from app.nodes.whatsapp import send_whatsapp_message
         # return (f"Executing whatsapp message step with config: {config}")
-        # send_whatsapp_message(config=config)
+        # send_whatsapp_message(config=config, payload=payload)
     elif step_type == "formatter":
         from app.nodes.formatter import format_field
         # return (f"Executing formatter step with config: {config}")
-        # format_field(config=config)
+        # format_field(config=config, payload=payload)
     else:
         raise ValueError(f"Unsupported step type: {step_type}")

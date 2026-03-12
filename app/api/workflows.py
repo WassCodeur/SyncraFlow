@@ -57,7 +57,7 @@ def add_workflow(db: Annotated[connection, Depends(get_conn)], user: Annotated[U
 @router.post("/workflows/{workflow_id}/steps", response_model=StepModel)
 def add_step(db: Annotated[connection, Depends(get_conn)], user: Annotated[UserData, Depends(current_active_user)], step: Step, workflow_id):
     """Add a new step to an existing workflow.
-    
+
     Parameters
     ----------
     db : connection
@@ -68,7 +68,7 @@ def add_step(db: Annotated[connection, Depends(get_conn)], user: Annotated[UserD
         The step data to be added, including type and configuration.
     workflow_id : str
         The ID of the workflow to which the step will be added.
-    
+
     Returns
     -------
     dict
