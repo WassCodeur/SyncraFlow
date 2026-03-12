@@ -46,7 +46,7 @@ class Credential(Base):
     __tablename__ = 'credentials'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
-    name = Column(String(100))
+    name = Column(String(100), nullable=False)
     service = Column(String(50))
     data = Column(JSON)
     user = relationship("User", back_populates="credentials")
@@ -56,6 +56,7 @@ class Step(Base):
     __tablename__ = 'steps'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
     # user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
+    name = Column(String(100), nullable=False)
     workflow_id = Column(UUID(as_uuid=True), ForeignKey('workflows.id'))
     type = Column(String(50))
     config = Column(JSONB)

@@ -79,9 +79,11 @@ def add_step(db: Annotated[connection, Depends(get_conn)], user: Annotated[UserD
                                      "id", "trigger_slug"], filter={'id': workflow_id, 'user_id': user.id})
 
     if workflow_exist:
+        name = step.name.strip().lower()
         step_exist = queries.get_one(
-            db_conn=db, table="steps", filter={"type": step.type, 'workflow_id': workflow_id})
+            db_conn=db, table="steps", filter={"type": step.type, "name": name, 'workflow_id': workflow_id})
         if step_exist:
+    
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"You already have this step with the same type: {step_exist['type']}"
@@ -94,6 +96,7 @@ def add_step(db: Annotated[connection, Depends(get_conn)], user: Annotated[UserD
         step = {
             "id": str(uuid4()),
             "workflow_id": workflow_id,
+            "name": name,
             "type": step.type,
             "config": step.config.model_dump(),
             "order":  next_order

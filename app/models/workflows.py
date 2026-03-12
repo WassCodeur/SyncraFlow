@@ -57,6 +57,7 @@ class FormatterConfig(BaseModel):
 
 
 class Step(BaseModel):
+    name: str
     type: Literal["email", "filter", "http_request",
                   "whatsapp_message", "formatter"]
     config: Union[EmailConfig, FilterConfig, HttpRequestConfig,
